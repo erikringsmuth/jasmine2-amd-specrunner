@@ -5,81 +5,89 @@ define([
 ], function (jasmine, jasmineRequire) {
   "use strict";
 
-  /**
-   * Since this is being run in a browser and the results should populate to an HTML page, require the HTML-specific Jasmine code, injecting the same reference.
-   */
-  jasmineRequire.html(jasmine);
+  var boot = {
+    /**
+     * Create the Jasmine environment. This is used to run all specs in a project.
+     */
+    env: jasmine.getEnv(),
 
-  /**
-   * Create the Jasmine environment. This is used to run all specs in a project.
-   */
-  var env = jasmine.getEnv();
+    /**
+     * ## Reporters
+     * The `HtmlReporter` builds all of the HTML UI for the runner page. This reporter paints the dots, stars, and x's for specs, as well as all spec names and all failures (if any).
+     */
+    htmlReporter: null,
 
-  /**
-   * ## Runner Parameters
-   *
-   * More browser specific code - wrap the query string in an object and to allow for getting/setting parameters from the runner user interface.
-   */
-  var queryString = new jasmine.QueryString({
-    getWindowLocation: function() { return window.location; }
-  });
+    initializeHtmlReporter: function() {
+      /**
+       * Since this is being run in a browser and the results should populate to an HTML page, require the HTML-specific Jasmine code, injecting the same reference.
+       */
+      jasmineRequire.html(jasmine);
 
-  var catchingExceptions = queryString.getParam("catch");
-  env.catchExceptions(typeof catchingExceptions === "undefined" ? true : catchingExceptions);
+      /**
+       * ## Runner Parameters
+       *
+       * More browser specific code - wrap the query string in an object and to allow for getting/setting parameters from the runner user interface.
+       */
+      var queryString = new jasmine.QueryString({
+        getWindowLocation: function() { return window.location; }
+      });
 
-  /**
-   * ## Reporters
-   * The `HtmlReporter` builds all of the HTML UI for the runner page. This reporter paints the dots, stars, and x"s for specs, as well as all spec names and all failures (if any).
-   */
-  var htmlReporter = new jasmine.HtmlReporter({
-    env: env,
-    onRaiseExceptionsClick: function() { queryString.setParam("catch", !env.catchingExceptions()); },
-    getContainer: function() { return document.body; },
-    createElement: function() { return document.createElement.apply(document, arguments); },
-    createTextNode: function() { return document.createTextNode.apply(document, arguments); },
-    timer: new jasmine.Timer()
-  });
+      var catchingExceptions = queryString.getParam("catch");
+      boot.env.catchExceptions(typeof catchingExceptions === "undefined" ? true : catchingExceptions);
 
-  /**
-   * The `jsApiReporter` also receives spec results, and is used by any environment that needs to extract the results from JavaScript.
-   */
-  env.addReporter(new jasmine.JsApiReporter({
-    timer: new jasmine.Timer()
-  }));
-  env.addReporter(htmlReporter);
+      /**
+       * ## Reporters
+       * The `HtmlReporter` builds all of the HTML UI for the runner page. This reporter paints the dots, stars, and x"s for specs, as well as all spec names and all failures (if any).
+       */
+      boot.htmlReporter = new jasmine.HtmlReporter({
+        env: boot.env,
+        onRaiseExceptionsClick: function() { queryString.setParam("catch", !boot.env.catchingExceptions()); },
+        getContainer: function() { return document.body; },
+        createElement: function() { return document.createElement.apply(document, arguments); },
+        createTextNode: function() { return document.createTextNode.apply(document, arguments); },
+        timer: new jasmine.Timer()
+      });
 
-  /**
-   * Filter which specs will be run by matching the start of the full name against the `spec` query param.
-   */
-  var specFilter = new jasmine.HtmlSpecFilter({
-    filterString: function() { return queryString.getParam("spec"); }
-  });
+      /**
+       * The `jsApiReporter` also receives spec results, and is used by any environment that needs to extract the results from JavaScript.
+       */
+      boot.env.addReporter(new jasmine.JsApiReporter({
+        timer: new jasmine.Timer()
+      }));
+      boot.env.addReporter(boot.htmlReporter);
 
-  env.specFilter = function(spec) {
-    return specFilter.matches(spec.getFullName());
-  };
+      /**
+       * Filter which specs will be run by matching the start of the full name against the `spec` query param.
+       */
+      var specFilter = new jasmine.HtmlSpecFilter({
+        filterString: function() { return queryString.getParam("spec"); }
+      });
 
-  /**
-   * Setting up timing functions to be able to be overridden. Certain browsers (Safari, IE 8, phantomjs) require this hack.
-   */
-  window.setTimeout = window.setTimeout;
-  window.setInterval = window.setInterval;
-  window.clearTimeout = window.clearTimeout;
-  window.clearInterval = window.clearInterval;
+      boot.env.specFilter = function(spec) {
+        return specFilter.matches(spec.getFullName());
+      };
 
-  /**
-   * Add the ability to initialize the HTML reporter.
-   */
-  env.initializeHtmlReporter = function() {
-    htmlReporter.initialize();
-  };
+      /**
+       * Setting up timing functions to be able to be overridden. Certain browsers (Safari, IE 8, phantomjs) require this hack.
+       */
+      window.setTimeout = window.setTimeout;
+      window.setInterval = window.setInterval;
+      window.clearTimeout = window.clearTimeout;
+      window.clearInterval = window.clearInterval;
 
-  var bootAmd = {
+      /**
+       * Finally, initialize the HTML reporter.
+       */
+      boot.htmlReporter.initialize();
+    },
+
+    /**
+     * Execute the Jasmine environment.
+     */
     execute: function() {
-      htmlReporter.initialize();
-      env.execute();
+      boot.env.execute();
     }
   };
 
-  return bootAmd;
+  return boot;
 });

@@ -25,8 +25,9 @@ define([], function() {
   ];
 
   // Load the HTML bootloader and all of the specs
-  require(["bootAmd"].concat(specs), function (bootAmd) {
+  require(["bootAmd"].concat(specs), function (boot) {
     // All of the specs have been loaded. Initialize the HTML Reporter and execute the environment.
-    bootAmd.execute();
+    boot.initializeHtmlReporter();
+    boot.execute();
   });
 });
